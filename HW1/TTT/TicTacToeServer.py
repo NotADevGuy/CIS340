@@ -56,7 +56,11 @@ class Server:
                     if player[0] == currentPlayer:
                         # This is the server player, so not too bad, simple stuff here.
                         print(getBoard())
-                        choice = int(input(f"Enter spot 0-8, {currentPlayer} ({currentSymbol}): "))
+                        choice = input(f"Enter spot 0-8, {currentPlayer} ({currentSymbol}): ")
+                        try:
+                            choice = int(choice)
+                        except:
+                            choice = -1
                         # Simplified the while loop, otherwise it's a fairly large code block. Save space when I can
                         while choice > 8 or choice < 0 or board[choice] != choice:
                             choice = int(input("Bad input, try again: "))
