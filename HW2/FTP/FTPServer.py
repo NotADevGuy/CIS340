@@ -1,6 +1,7 @@
 import socket
 import random
 import os
+# TODO CREATE SERVER FOLDER IF NOT PRESENT
 
 
 class Server:

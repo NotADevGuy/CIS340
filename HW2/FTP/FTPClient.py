@@ -1,5 +1,6 @@
 import socket
 import os
+# TODO CREATE CLIENT FOLDER IF NOT PRESENT
 
 
 class Client:
