@@ -131,30 +131,52 @@ class Server:
                         conn.sendall("OK".encode())
 
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:
+                        print("Connection for data transfer made")
                         d.bind((host, port))
                         d.listen()
-                        conn, addr = d.accept()
+                        dataConn, dataAddr = d.accept()
                         text_lines = []
-                        while True:
-                            data = conn.recv(1024).decode()
+                        times = int(dataConn.recv(1024).decode())
+                        # print(times)
+                        # exit()
+                        for i in range(times):
+                            print("HEY")
+                            data = dataConn.recv(1024).decode()
                             if data != ">>FILE ENDED<<":
                                 text_lines.append(data)
-                                conn.sendall("OK".encode())
+                                dataConn.sendall("OK".encode())
                             elif data == ">>FILE ENDED<<":
-                                conn.sendall("DONE".encode())
+                                dataConn.sendall("DONE".encode())
                                 break
                             else:
                                 print("???")
-                        print(text_lines)
-                        # Can use file_name and the server_path
-                        # with write file thing
-
+                        with open((server_path + "\\" + file_name), 'w') as f:
+                            for line in text_lines:
+                                f.write(line)
+                        dataConn.close()
+                        print("CONN CLOSED")
 
                     # This is where the file will be prepared to send.
                     # Also check if a file by that name exists already
 
                 elif command == "GET":
-                    pass
+                    file_to_return = conn.recv(1024).decode()
+                    if os.path.isfile(server_path + f"\\{file_to_return}"):
+                        conn.sendall("OK".encode())
+                    else:
+                        conn.sendall("NO".encode())
+                    if conn.recv(1024).decode() == "READY":
+                        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:
+                            print("Connection for data transfer made")
+                            d.bind((host, port))
+                            d.listen()
+                            dataConn, dataAddr = d.accept()
+                            with open((server_path + "\\" + file_to_return)) as f:
+                                contents = f.readlines()
+                            contents.append('>>FILE ENDED<<')
+                            dataConn.sendall(str(len(contents)).encode())
+                            # Add on client for reading length
+
 
                 elif command == "QUIT":
                     exit()

@@ -165,18 +165,20 @@ class Client:
                                 if file_ok == "OK":
                                     print("YAY")
                                 elif file_ok == "DUPE":
-                                    print("Theres already that file. Will give random name")
                                     dupe_name = s.recv(1024).decode()
-                                    print(dupe_name)
+                                    print("File already exists, new name: " + dupe_name)
                                 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:
                                     d.connect((host, port))
                                     file_path = client_path + f"\\{bonus_part}"
                                     with open(file_path) as f:
                                         contents = f.readlines()
                                     contents.append('>>FILE ENDED<<')
+                                    d.sendall(str(len(contents)).encode())
                                     for line in contents:
                                         d.sendall(line.encode())
+                                        # print("transferred some.")
                                         d.recv(1024).decode()
+                                    d.close()
                             else:
                                 print("Something went wrong.")
                         else:
@@ -184,7 +186,27 @@ class Client:
                             print("Not a valid file.")
 
                 elif command == "GET":
-                    pass
+                    if len(user_input) != 2:
+                        print("Invalid format. Try Again.")
+                    else:
+                        s.sendall(bonus_part.encode())
+                        exists = s.recv(1024).decode()
+                        if exists == "NO":
+                            print("File doesn't exist on server path. Try Again.")
+                        elif exists == "OK":
+                            if os.path.isfile(client_path + f"\\{bonus_part}"):
+                                print("File exists locally, renaming new file to: ")
+                                bonus_part = bonus_part.split('.')
+                                i = 1
+                                while True:
+                                    temp_name = '.'.join(bonus_part)
+                                    if not os.path.isfile(client_path + f"\\{temp_name}"):
+                                        break
+                                    bonus_part[-2] += str(i)
+                                    i += 1
+                                bonus_part = '.'.join(bonus_part)
+                            s.sendall("READY".encode())
+                            # s.sendall(bonus_part.encode())
 
                 elif command == "QUIT":
                     s.close()
