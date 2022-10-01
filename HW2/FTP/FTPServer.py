@@ -140,7 +140,7 @@ class Server:
                         # print(times)
                         # exit()
                         for i in range(times):
-                            print("HEY")
+                            # print("HEY")
                             data = dataConn.recv(1024).decode()
                             if data != ">>FILE ENDED<<":
                                 text_lines.append(data)
@@ -155,9 +155,6 @@ class Server:
                                 f.write(line)
                         dataConn.close()
                         print("CONN CLOSED")
-
-                    # This is where the file will be prepared to send.
-                    # Also check if a file by that name exists already
 
                 elif command == "GET":
                     file_to_return = conn.recv(1024).decode()
@@ -174,15 +171,17 @@ class Server:
                             with open((server_path + "\\" + file_to_return)) as f:
                                 contents = f.readlines()
                             contents.append('>>FILE ENDED<<')
-                            dataConn.sendall(str(len(contents)).encode())
-                            # Add on client for reading length
 
+                            dataConn.sendall(str(len(contents)).encode())
+
+                            for line in contents:
+                                dataConn.sendall(line.encode())
+                                dataConn.recv(1024).decode()
+                            dataConn.close()
+                            # Add on client for reading length
 
                 elif command == "QUIT":
                     exit()
-
-
-
 
 
 if __name__ == "__main__":

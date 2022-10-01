@@ -206,6 +206,27 @@ class Client:
                                     i += 1
                                 bonus_part = '.'.join(bonus_part)
                             s.sendall("READY".encode())
+
+                            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:
+                                d.connect((host, port))
+                                times = int(d.recv(1024).decode())
+                                text_lines = []
+                                for i in range(times):
+                                    data = d.recv(1024).decode()
+                                    if data != ">>FiLE ENDED<<":
+                                        text_lines.append(data)
+                                        d.sendall("OK".encode())
+                                    elif data == ">>FILE ENDED<<":
+                                        d.sendall("DONE".encode())
+                                        break
+                                    else:
+                                        print("???")
+                                with open((client_path + "\\" + bonus_part), 'w') as f:
+                                    for line in text_lines:
+                                        f.write(line)
+                                d.close()
+                                print("CONN CLOSED")
+
                             # s.sendall(bonus_part.encode())
 
                 elif command == "QUIT":
