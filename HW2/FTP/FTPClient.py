@@ -1,7 +1,7 @@
 import socket
 import os
 # TODO CREATE CLIENT FOLDER IF NOT PRESENT
-
+# TODO WHAT IF FILE ALREADY EXISTS IN PUT/GET
 
 class Client:
     def __init__(self):
@@ -9,155 +9,198 @@ class Client:
 
     def main(self):
         host = "127.0.0.1"
-        port = 1040
+        main_port = 1040
 
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            s.connect((host, port))
+            s.connect((host, main_port))
             print(s.recv(1024).decode())
             print(s.recv(1024).decode())
-            response = 1  # Todo change this back
-            while response not in [1, 2, 3, 4]:
-                response = input("Choice: ")
-                try:
-                    response = int(response)
-                except:
-                    response = 5
-            response = str(response)
-            s.sendall(response.encode())
-            response = int(response)
-
-            # This is if Active Connection is chosen. (Server Chooses)
-            if response == 1:
-                # This next line gets the data port number the server chose
-                port = int(s.recv(1024).decode())
-
-                # This next line gets the "230 OK" message
-                print(s.recv(1024).decode())
-
-            # This is if Passive Connection is chosen. (Client Chooses)
-            # TODO Check if user chooses port or client program
-            elif response == 2:
-                # This next line gets the "Enter desired port: " text
-                print(s.recv(1024).decode())
-
-                # True loop to ensure a valid port is chosen.
-                while True:
-                    port = input("Port Choice (1024 - 65535): ")
-                    try:
-                        port = int(port)  # Checks if input is int
-                        if 1024 <= port <= 65535:  # Checks if input is in valid range
-                            break  # Gets out of the while loop, since qualifications are met
-                    except ValueError:  # ValueError be caused from trying to typecast to int a str.
-                        pass  # Nothing needs to go here. Could tell user what was wrong, but not needed.
-
-                # This sends the port choice to the server
-                s.sendall(str(port).encode())
-
-                # This next line gets the "230 OK" message
-                print(s.recv(1024).decode())
-
-            # This is in the case the client wants to close FTP Client
-            elif response == 3:
-                exit()
-
-            print("\n\n\n")
-            response = ''
-            client = os.getcwd() + "\\Client"
-            s.sendall(client.encode())
-            clientPrint = ["Client"]
-
-            server = s.recv(1024).decode()
-            serverPrint = (s.recv(1024).decode()).split("[-]")
-
-
-            testPiece = "\\"
             while True:
-                print("\nCOMMANDS:\n"
-                      "--> CSHOW: Contents of client cwd  --> SSHOW: Contents of server cwd\n"
-                      "--> CUP: like cd .. on client      --> SUP: like cd .. on server    \n"
-                      "--> CDOWN: like cd ### on client   --> SDOWN: like cd ### on server \n"
-                      "--> PUT: File (client -> server)   --> GET: File (server -> client) \n"
-                      "--> QUIT: Quit")
-                print(f"Local CWD: {testPiece.join(clientPrint)}\nRemote CWD: {testPiece.join(serverPrint)}")
-                response = input("> ")
-                s.sendall(response.encode())
-                print("\n")
-                if response == "CSHOW":
-                    test = os.listdir(client)
+                response = input(">> ")
+                response = response.split(" ")
+
+                if response[0] == "PASV":
+                    s.sendall("PASV".encode())  # Lets server know PASV was chosen
+                    port = int(s.recv(1024).decode())  # Grabs the port from the server
+                    print(s.recv(1024).decode())  # This gets the "230 OK"
+                    break
+                elif response[0] == "PORT":
+                    if len(response) != 2:
+                        print("Too many or too little values given. Try again.")
+                    else:
+                        try:
+                            port = int(response[1])
+                            if 1024 <= port <= 65535:
+                                s.sendall("PORT".encode())
+                                s.sendall(str(port).encode())
+                                print(s.recv(1024).decode())
+                                break
+                            else:
+                                print("PORT out of range. Try again.")
+                        except ValueError:
+                            print("Invalid value in second field. Try again.")
+                elif response[0] == "CLOSE":
+                    s.sendall("CLOSE".encode())
+                    exit()
+                elif response[0] == "STOP":
+                    s.sendall("STOP".encode())
+                    break
+
+            # --------------------------------------------------------- #
+            #  Done with port selection, now for fun stuff.             #
+            # --------------------------------------------------------- #
+
+            client_path = os.getcwd() + "\\Client"
+            # s.sendall(client_path.encode())
+            client_items = ["Client"]
+
+            # server_path = s.recv(1024).decode()
+            server_items = ["Server"]
+
+            forward_slash = "\\"
+
+            print("                       COMMANDS                        \n"
+                  "      CLIENT COMMANDS      |      SERVER COMMANDS      \n"
+                  "-> CSHW: Like dir on cmd    -> SSHW: Like dir on cmd   \n"
+                  "-> CUP: Like cd .. on cmd   -> SUP: Like cd .. on cmd  \n"
+                  "-> CDWN: Like cd ## on cmd  -> SDWN: Like cd ## on cmd \n"
+                  "-> PUT: File C->S           -> GET: File S->C          \n"
+                  "-> HELP: Prints this out    -> QUIT: Quits...")
+            while True:
+                print(f"\nLocal CWD: {forward_slash.join(client_items)}\nRemote CWD: {forward_slash.join(server_items)}")
+                user_input = (input(">> ")).split()
+                if len(user_input) == 1:
+                    pass
+                else:
+                    bonus_part = user_input[1]
+                command = user_input[0]
+                s.sendall(command.encode())
+                print("")
+
+                if command == "CSHW":
                     dirs = []
                     files = []
-                    for item in test:
-                        itemPath = client + f"\\{item}"
-                        if os.path.isfile(itemPath):
+                    for item in os.listdir(client_path):
+                        if os.path.isfile((client_path + f"\\{item}")):
                             files.append(item)
                         else:
                             dirs.append(item)
+
                     print("Directories:")
-                    toPrint = ''
+                    temp_print = ''
                     for i in range(len(dirs)):
                         if i % 5 == 0 and i != 0:
-                            toPrint += f"{dirs[i]}\n"
+                            temp_print += f"{dirs[i]}\n"
                         elif i != (len(dirs) - 1):
-                            toPrint += f"{dirs[i]}, "
+                            temp_print += f"{dirs[i]}, "
                         else:
-                            toPrint += f"{dirs[i]}"
+                            temp_print += f"{dirs[i]}"
                         i += 1
-                    print(toPrint)
+                    print(temp_print)
+
                     print("Files:")
-                    toPrint = ''
+                    temp_print = ''
                     for i in range(len(files)):
                         if i % 5 == 0 and i != 0:
-                            toPrint += f"{files[i]}\n"
+                            temp_print += f"{files[i]}\n"
                         elif i != (len(files) - 1):
-                            toPrint += f"{files[i]}, "
+                            temp_print += f"{files[i]}, "
                         else:
-                            toPrint += f"{files[i]}"
+                            temp_print += f"{files[i]}"
                         i += 1
-                    print(toPrint)
-                elif response == "CUP":
-                    if len(clientPrint) == 1:
+                    print(temp_print)
+
+                elif command == "CUP":
+                    if len(client_items) == 1:
                         print("Can't go up any more!")
                     else:
-                        clientPrint.pop()
-                        client = client.split("\\")
-                        client.pop()
-                        client = '\\'.join(client)
-                        print(clientPrint)
-                        print(client)
-                elif response == "CDOWN":
-                    response = input("What directory to travel down to?")
-                    if os.path.isdir(client + f"\\{response}"):
-                        clientPrint.append(response)
-                        client += f"\\{response}"
+                        client_items.pop()
+                        client_path = client_path.split("\\")
+                        client_path.pop()
+                        client_path = '\\'.join(client_path)
+
+                elif command == "CDWN":
+                    if len(user_input) != 2:
+                        print("Invalid Format. Try Again.")
                     else:
-                        print("Not a directory!")
-                elif response == "SSHOW":
+                        if os.path.isdir(client_path + f"\\{bonus_part}"):
+                            client_items.append(bonus_part)
+                            client_path += f"\\{bonus_part}"
+                        else:
+                            print("Not a directory. Try Again.")
+
+                elif command == "SSHW":
                     print(s.recv(1024).decode())
-                elif response == "SUP":
+
+                elif command == "SUP":
                     fromServer = s.recv(1024).decode()
-                    if fromServer == "123":
-                        print("Can't go up any more!")
-                    elif fromServer == "321":
-                        serverPrint = (s.recv(1024).decode()).split("[-]")
+                    if fromServer == "CGUAM":
+                        print("ERROR: Can't go up any more.")
+                    elif fromServer == "CGU":
+                        server_items = (s.recv(1024).decode()).split("[-]")
                         s.sendall("OK".encode())
-                        server = s.recv(1024).decode()
-                elif response == "SDOWN":
-                    toSend = input("What directory to travel down to?")
-                    s.sendall(toSend.encode())
-                    code = s.recv(1024).decode()
-                    if code == "123":
-                        serverPrint = (s.recv(1024).decode()).split("[-]")
-                        s.sendall("OK".encode())
-                        server = s.recv(1024).decode()
+                        server_path = s.recv(1024).decode()
+
+                elif command == "SDWN":
+                    if len(user_input) != 2:
+                        print("Invalid format. Try again.")
                     else:
-                        print(code)
-                elif response == "PUT":
+                        s.sendall(bonus_part.encode())
+                        code = s.recv(1024).decode()
+                    if code == "CTD":
+                        server_items = (s.recv(1024).decode()).split("[-]")
+                        s.sendall("OK".encode())
+                        server_path = s.recv(1024).decode()
+                    elif code == "NAD":
+                        print("Not a directory1")
+
+                elif command == "PUT":
+                    if len(user_input) != 2:
+                        print("Invalid format. Try Again.")
+                    else:
+                        if os.path.isfile(client_path + f"\\{bonus_part}"):
+                            s.sendall(f"{bonus_part}".encode())
+                            file_ok = s.recv(1024).decode()
+                            if file_ok == "OK" or file_ok == "DUPE":
+                                if file_ok == "OK":
+                                    print("YAY")
+                                elif file_ok == "DUPE":
+                                    print("Theres already that file. Will give random name")
+                                    dupe_name = s.recv(1024).decode()
+                                    print(dupe_name)
+                                with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:
+                                    d.connect((host, port))
+                                    file_path = client_path + f"\\{bonus_part}"
+                                    with open(file_path) as f:
+                                        contents = f.readlines()
+                                    contents.append('>>FILE ENDED<<')
+                                    for line in contents:
+                                        d.sendall(line.encode())
+                                        d.recv(1024).decode()
+                            else:
+                                print("Something went wrong.")
+                        else:
+                            s.sendall("NAVF")
+                            print("Not a valid file.")
+
+                elif command == "GET":
                     pass
-                elif response == "GET":
-                    pass
-                elif response == "QUIT":
+
+                elif command == "QUIT":
+                    s.close()
                     exit()
-            s.close()
+
+                elif command == "HELP":
+                    print("                       COMMANDS                        \n"
+                          "      CLIENT COMMANDS      |      SERVER COMMANDS      \n"
+                          "-> CSHW: Like dir on cmd    -> SSHW: Like dir on cmd   \n"
+                          "-> CUP: Like cd .. on cmd   -> SUP: Like cd .. on cmd  \n"
+                          "-> CDWN: Like cd ## on cmd  -> SDWN: Like cd ## on cmd \n"
+                          "-> PUT: File C->S           -> GET: File S->C          \n"
+                          "-> HELP: Prints this out    -> QUIT: Quits...")
+
+                else:
+                    print("Unrecognized Command...")
 
 
 if __name__ == '__main__':
