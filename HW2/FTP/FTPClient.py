@@ -166,6 +166,7 @@ class Client:
                         print("Invalid format. Try Again.")  # If not, lets user know
                     else:
                         if os.path.isfile(client_path + f"\\{bonus_part}"):  # If file given is a file...
+                            print(s.recv(1024).decode())  # Gets 210 OK message
                             s.sendall(f"{bonus_part}".encode())  # Sends the file to server to check for name duplicates
                             file_ok = s.recv(1024).decode()  # Gets server status
                             if file_ok == "OK" or file_ok == "DUPE":  # file_ok from Server is OK or DUPE
@@ -197,11 +198,11 @@ class Client:
                     else:
                         s.sendall(bonus_part.encode())  # Sends file to GET to server
                         exists = s.recv(1024).decode()  # Server lets Client know if file exists
-                        if exists == "NO":  # File doesn't exist
+                        print(exists)
+                        if exists == "404 Bad Request":  # File doesn't exist
                             print("File doesn't exist on server path. Try Again.")
-                        elif exists == "OK":  # File does exist
+                        elif exists == "220 OK":  # File does exist
                             if os.path.isfile(client_path + f"\\{bonus_part}"):  # Checks if file with that name exists
-                                print("File exists locally, renaming new file to: ")  # File does exist
                                 bonus_part = bonus_part.split('.')  # Splits up file name
 
                                 # Handles coming up with new name for file
@@ -213,6 +214,7 @@ class Client:
                                     bonus_part[-2] += str(i)
                                     i += 1
                                 bonus_part = '.'.join(bonus_part)
+                                print(f"File exists locally, renaming new file to: {bonus_part}")  # File does exist
 
                             s.sendall("READY".encode())  # If filename is dupe or not, will be ready now
                             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:  # Opens data communication

@@ -122,6 +122,10 @@ class Server:
                         conn.sendall("NAD".encode())  # Lets Client know NAD: Not A Directory
 
                 elif command == "PUT":
+                    try:
+                        conn.sendall("210 OK".encode())
+                    except:
+                        conn.sendall("407 Bad Request".encode())
                     file_name = conn.recv(1024).decode()  # Gets filename from Client
                     if os.path.isfile(server_path + f"\\{file_name}"):  # Checks if file exists
                         conn.sendall("DUPE".encode())  # If so, lets Client know it's a dupe
@@ -139,7 +143,6 @@ class Server:
                         conn.sendall(file_name.encode())  # Sends dupe filename
                     else:
                         conn.sendall("OK".encode())  # Just Lets Client know no duplicate exists
-
                     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:  # Opens data connection
                         print("Connection for data transfer made")
                         d.bind((host, port))  # binds server to new connection
@@ -167,9 +170,9 @@ class Server:
                 elif command == "GET":
                     file_to_return = conn.recv(1024).decode()  # Gets file from Client
                     if os.path.isfile(server_path + f"\\{file_to_return}"):  # Checks if file exists
-                        conn.sendall("OK".encode())  # If it does, send OK
+                        conn.sendall("220 OK".encode())  # If it does, send 220
                     else:
-                        conn.sendall("NO".encode())  # If not, send NO
+                        conn.sendall("404 Bad Request".encode())  # If not, send 404
                     if conn.recv(1024).decode() == "READY":
                         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as d:  # Open data connection
                             d.bind((host, port))  # Binds Server to address and port
